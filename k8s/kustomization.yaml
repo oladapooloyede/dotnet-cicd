@@ -9,4 +9,4 @@ resources:
 
 images:
   - name: dotnet-pg-microservice
-    newName: dotnet-pg-microservice
+    newName: image-registry.openshift-image-registry.svc:5000/sandbox/dotnet-pg-microservice:latest
