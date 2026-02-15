@@ -57,7 +57,7 @@ spec:
         - clone-repo
       params:
         - name: IMAGE
-          value: $(params.image-name)
+          value: $(params.image-name):$(tasks.clone-repo.results.commit)
         - name: DOCKERFILE
           value: ./Dockerfile
         - name: CONTEXT
