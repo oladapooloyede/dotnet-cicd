@@ -13,7 +13,7 @@ spec:
     - name: git-revision
       value: master
     - name: image-name
-      value: "image-registry.openshift-image-registry.svc:5000/sandbox/dotnet-pg-microservice"
+      value: "image-registry.openshift-image-registry.svc:5000/sandbox/dotnet-pg-microservice:latest"
     - name: kustomize-repo-url
       value: "https://github.com/oladapooloyede/dotnet-cicd"
   workspaces:

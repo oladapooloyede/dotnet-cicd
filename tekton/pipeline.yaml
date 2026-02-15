@@ -120,4 +120,5 @@ spec:
               git diff --cached --quiet && echo "No changes to commit" || {
                 git commit -m "Update image to $(params.IMAGE)"
                 git push origin master
+                echo "Pushed new image digest to git, ArgoCD will auto-sync"
               }
