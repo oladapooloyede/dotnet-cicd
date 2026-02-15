@@ -1,0 +1,95 @@
+apiVersion: tekton.dev/v1
+kind: Pipeline
+metadata:
+  name: dotnet-pg-microservice-pipeline
+  labels:
+    app: dotnet-pg-microservice
+spec:
+  params:
+    - name: git-url
+      type: string
+      description: The Git repository URL
+    - name: git-revision
+      type: string
+      description: The Git revision to build
+      default: master
+    - name: image-name
+      type: string
+      description: The fully qualified image name to push
+    - name: namespace
+      type: string
+      description: The OpenShift namespace to deploy to
+
+  workspaces:
+    - name: shared-workspace
+
+  tasks:
+    - name: clone-repo
+      taskRef:
+        resolver: cluster
+        params:
+          - name: kind
+            value: task
+          - name: name
+            value: git-clone
+          - name: namespace
+            value: openshift-pipelines
+      params:
+        - name: URL
+          value: $(params.git-url)
+        - name: REVISION
+          value: $(params.git-revision)
+      workspaces:
+        - name: output
+          workspace: shared-workspace
+
+    - name: build-and-push
+      taskRef:
+        resolver: cluster
+        params:
+          - name: kind
+            value: task
+          - name: name
+            value: buildah
+          - name: namespace
+            value: openshift-pipelines
+      runAfter:
+        - clone-repo
+      params:
+        - name: IMAGE
+          value: $(params.image-name)
+        - name: DOCKERFILE
+          value: ./Dockerfile
+        - name: CONTEXT
+          value: .
+      workspaces:
+        - name: source
+          workspace: shared-workspace
+
+    - name: kustomize-patch
+      runAfter:
+        - build-and-push
+      workspaces:
+        - name: source
+          workspace: shared-workspace
+      params:
+        - name: NAMESPACE
+          value: $(params.namespace)
+        - name: IMAGE
+          value: $(params.image-name)
+      taskSpec:
+        params:
+          - name: NAMESPACE
+          - name: IMAGE
+        workspaces:
+          - name: source
+        steps:
+          - name: kustomize-patch
+            image: image-registry.openshift-image-registry.svc:5000/openshift/cli:latest
+            workingDir: $(workspaces.source.path)/k8s
+            script: |
+              #!/usr/bin/env bash
+              set -e
+              kustomize edit set image dotnet-pg-microservice=$(params.IMAGE)
+              kustomize build . | oc apply --server-side --force-conflicts \
+                -n $(params.NAMESPACE) -f -
