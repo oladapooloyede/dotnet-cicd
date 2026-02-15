@@ -1,21 +1,23 @@
 apiVersion: tekton.dev/v1
 kind: PipelineRun
 metadata:
-  generateName: dotnet-pg-microservice-run-
+  generateName: ci-pipeline-run-
   labels:
-    app: dotnet-pg-microservice
+    app: ci-pipeline
 spec:
   pipelineRef:
-    name: dotnet-pg-microservice-pipeline
+    name: ci-pipeline
   params:
     - name: git-url
       value: "https://github.com/oladapooloyede/dotnet-pg-microservice"
     - name: git-revision
       value: master
     - name: image-name
-      value: "image-registry.openshift-image-registry.svc:5000/demo-docker/dotnet-pg-microservice:latest"
+      value: "image-registry.openshift-image-registry.svc:5000/sandbox/dotnet-pg-microservice:latest"
+    - name: kustomize-repo-url
+      value: "https://github.com/oladapooloyede/dotnet-cicd"
     - name: namespace
-      value: "demo-docker"
+      value: "sandbox"
   workspaces:
     - name: shared-workspace
       volumeClaimTemplate:

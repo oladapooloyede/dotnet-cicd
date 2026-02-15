@@ -1,9 +1,9 @@
 apiVersion: tekton.dev/v1
 kind: Pipeline
 metadata:
-  name: dotnet-pg-microservice-pipeline
+  name: ci-pipeline
   labels:
-    app: dotnet-pg-microservice
+    app: ci-pipeline
 spec:
   params:
     - name: git-url
@@ -16,6 +16,9 @@ spec:
     - name: image-name
       type: string
       description: The fully qualified image name to push
+    - name: kustomize-repo-url
+      type: string
+      description: The Git repository URL containing the kustomize manifests
     - name: namespace
       type: string
       description: The OpenShift namespace to deploy to
@@ -77,19 +80,28 @@ spec:
           value: $(params.namespace)
         - name: IMAGE
           value: $(params.image-name)
+        - name: KUSTOMIZE_REPO_URL
+          value: $(params.kustomize-repo-url)
       taskSpec:
         params:
           - name: NAMESPACE
           - name: IMAGE
+          - name: KUSTOMIZE_REPO_URL
         workspaces:
           - name: source
         steps:
+          - name: clone-kustomize-repo
+            image: alpine/git:latest
+            script: |
+              #!/usr/bin/env sh
+              rm -rf $(workspaces.source.path)/_kustomize
+              git clone $(params.KUSTOMIZE_REPO_URL) $(workspaces.source.path)/_kustomize
           - name: kustomize-patch
             image: image-registry.openshift-image-registry.svc:5000/openshift/cli:latest
-            workingDir: $(workspaces.source.path)/k8s
             script: |
               #!/usr/bin/env bash
               set -e
-              kustomize edit set image dotnet-pg-microservice=$(params.IMAGE)
-              kustomize build . | oc apply --server-side --force-conflicts \
-                -n $(params.NAMESPACE) -f -
+              cd $(workspaces.source.path)/_kustomize/k8s
+              sed -i "s|newName: dotnet-pg-microservice|newName: $(params.IMAGE)|" kustomization.yaml
+              oc apply -k . --server-side --force-conflicts \
+                -n $(params.NAMESPACE)
