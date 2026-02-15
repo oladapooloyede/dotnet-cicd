@@ -19,9 +19,6 @@ spec:
     - name: kustomize-repo-url
       type: string
       description: The Git repository URL containing the kustomize manifests
-    - name: namespace
-      type: string
-      description: The OpenShift namespace to deploy to
 
   workspaces:
     - name: shared-workspace
@@ -76,15 +73,12 @@ spec:
         - name: source
           workspace: shared-workspace
       params:
-        - name: NAMESPACE
-          value: $(params.namespace)
         - name: IMAGE
-          value: $(params.image-name)
+          value: $(tasks.build-and-push.results.IMAGE_URL)
         - name: KUSTOMIZE_REPO_URL
           value: $(params.kustomize-repo-url)
       taskSpec:
         params:
-          - name: NAMESPACE
           - name: IMAGE
           - name: KUSTOMIZE_REPO_URL
         workspaces:
@@ -96,12 +90,28 @@ spec:
               #!/usr/bin/env sh
               rm -rf $(workspaces.source.path)/_kustomize
               git clone $(params.KUSTOMIZE_REPO_URL) $(workspaces.source.path)/_kustomize
-          - name: kustomize-patch
-            image: image-registry.openshift-image-registry.svc:5000/openshift/cli:latest
+          - name: patch-and-push
+            image: alpine/git:latest
+            env:
+              - name: GIT_TOKEN
+                valueFrom:
+                  secretKeyRef:
+                    name: git-credentials
+                    key: token
+              - name: GIT_USER
+                valueFrom:
+                  secretKeyRef:
+                    name: git-credentials
+                    key: username
             script: |
-              #!/usr/bin/env bash
+              #!/usr/bin/env sh
               set -e
               cd $(workspaces.source.path)/_kustomize/k8s
               sed -i "s|newName: dotnet-pg-microservice|newName: $(params.IMAGE)|" kustomization.yaml
-              oc apply -k . --server-side --force-conflicts \
-                -n $(params.NAMESPACE)
+              cd $(workspaces.source.path)/_kustomize
+              git remote set-url origin https://${GIT_USER}:${GIT_TOKEN}@github.com/oladapooloyede/dotnet-cicd.git
+              git config user.email "tekton-pipeline@ci.local"
+              git config user.name "Tekton Pipeline"
+              git add k8s/kustomization.yaml
+              git commit -m "Update image to $(params.IMAGE)"
+              git push origin master

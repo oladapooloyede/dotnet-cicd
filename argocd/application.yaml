@@ -1,16 +1,16 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
-  name: dotnet-pg-microservice
+  name: dotnet-cicd
 spec:
   project: default
   source:
-    repoURL: https://github.com/oladapooloyede/dotnet-pg-microservice
+    repoURL: https://github.com/oladapooloyede/dotnet-cicd
     targetRevision: master
     path: k8s
   destination:
     server: https://kubernetes.default.svc
-    namespace: demo-docker
+    namespace: sandbox
   syncPolicy:
     automated:
       prune: true
