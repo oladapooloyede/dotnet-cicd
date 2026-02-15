@@ -57,7 +57,7 @@ spec:
         - clone-repo
       params:
         - name: IMAGE
-          value: $(params.image-name):$(tasks.clone-repo.results.commit)
+          value: $(params.image-name)
         - name: DOCKERFILE
           value: ./Dockerfile
         - name: CONTEXT
@@ -75,11 +75,14 @@ spec:
       params:
         - name: IMAGE
           value: $(tasks.build-and-push.results.IMAGE_URL)
+        - name: IMAGE_DIGEST
+          value: $(tasks.build-and-push.results.IMAGE_DIGEST)
         - name: KUSTOMIZE_REPO_URL
           value: $(params.kustomize-repo-url)
       taskSpec:
         params:
           - name: IMAGE
+          - name: IMAGE_DIGEST
           - name: KUSTOMIZE_REPO_URL
         workspaces:
           - name: source
@@ -108,6 +111,7 @@ spec:
               set -e
               cd $(workspaces.source.path)/_kustomize/k8s
               sed -i "s|newName:.*|newName: $(params.IMAGE)|" kustomization.yaml
+              sed -i "s|digest:.*|digest: $(params.IMAGE_DIGEST)|" kustomization.yaml
               cd $(workspaces.source.path)/_kustomize
               git remote set-url origin https://${GIT_USER}:${GIT_TOKEN}@github.com/oladapooloyede/dotnet-cicd.git
               git config user.email "tekton-pipeline@ci.local"
