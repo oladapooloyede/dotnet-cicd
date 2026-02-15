@@ -107,11 +107,13 @@ spec:
               #!/usr/bin/env sh
               set -e
               cd $(workspaces.source.path)/_kustomize/k8s
-              sed -i "s|newName: dotnet-pg-microservice|newName: $(params.IMAGE)|" kustomization.yaml
+              sed -i "s|newName:.*|newName: $(params.IMAGE)|" kustomization.yaml
               cd $(workspaces.source.path)/_kustomize
               git remote set-url origin https://${GIT_USER}:${GIT_TOKEN}@github.com/oladapooloyede/dotnet-cicd.git
               git config user.email "tekton-pipeline@ci.local"
               git config user.name "Tekton Pipeline"
               git add k8s/kustomization.yaml
-              git commit -m "Update image to $(params.IMAGE)"
-              git push origin master
+              git diff --cached --quiet && echo "No changes to commit" || {
+                git commit -m "Update image to $(params.IMAGE)"
+                git push origin master
+              }
