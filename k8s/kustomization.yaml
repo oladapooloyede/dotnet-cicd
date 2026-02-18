@@ -10,4 +10,4 @@ resources:
 images:
   - name: dotnet-pg-microservice
     newName: image-registry.openshift-image-registry.svc:5000/sandbox/dotnet-pg-microservice:latest
-    digest: sha256:b54b190a9a6b5c00f369b4350a8c255f78f1dcc580a2be8f0e106ddfbed66d47
+    digest: sha256:590708d2a0115a7c41e1dd074947b5125044c74a1bd9c046e88836d1e598d0c0
